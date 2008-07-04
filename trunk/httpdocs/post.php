@@ -2,19 +2,31 @@
 error_reporting(E_ALL);
 
 if (!isset($_POST["command"])) {
-	require("inc/error.php.inc");
+	require("inc/error.inc.php");
 }
 
-$file = $_FILES['upload']['tmp_name'];
+/* Settings : */
 $MAXFILESIZE = 5 * 1024;
+
+
+/* Database checks */
+if (!file_exists("data/post.db")) {
+	touch("data/post.db");
+	chmod("data/post.db",666);
+}
+
+/* Getting Data from Post */
+$file = $_FILES['upload']['tmp_name'];
+
 $filecontent = "";
 $command = $_POST["command"];
 $host    = $_POST["host"];
 $state	= $_POST["state"];
 
-# SQLIte Datenbank ...
+/* one blob of sourcecode :*/
+
 if ($con = sqlite3_open('data/post.db')) {
-	# Tabelle ggf. erzeugen
+	/* create table, if !exists */
 	$q = @sqlite3_query($con,'SELECT host FROM events WHERE id = 1');
 	if ($q === false) {
 		print "CREATE TABLE - ";
@@ -23,7 +35,7 @@ if ($con = sqlite3_open('data/post.db')) {
 		sqlite3_query_close($q);
 	}
 
-	# Logfile einlesen
+	/* read logfile */
 	$size = filesize($file);
 	if ($size > $MAXFILESIZE ) {
 		$size = $MAXFILESIZE;
@@ -32,8 +44,9 @@ if ($con = sqlite3_open('data/post.db')) {
 	$fh = fopen($file,'r');
 	$filecontent = $filecontent . fread($fh,$size);
 	fclose($fh);
-	$filecontent = str_replace("'","\\",$filecontent); # sql santizie
 
+	/* Poor-Mens-Security */
+	$filecontent = str_replace("'","\\",$filecontent);
 	$filecontent = preg_replace("/\s$/","",$filecontent);
 
 	if ($state <> 1 && $state <> 0 ) {
