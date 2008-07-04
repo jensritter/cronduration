@@ -7,7 +7,7 @@ use Sys::Hostname;
 use Data::Dumper;
 use File::Temp;
 
-my $url = "http://www.jens.org/~hacker/post/post.php";
+my $url = "http://localhost/workspace/cronduration/httpdocs/post.php";
 
 my $state = "START";
 my $command = "UNKNOWN";

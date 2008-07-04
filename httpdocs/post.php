@@ -2,7 +2,7 @@
 error_reporting(E_ALL);
 
 if (!isset($_POST["command"])) {
-	require("error.php.inc");
+	require("inc/error.php.inc");
 }
 
 $file = $_FILES['upload']['tmp_name'];
@@ -13,7 +13,7 @@ $host    = $_POST["host"];
 $state	= $_POST["state"];
 
 # SQLIte Datenbank ...
-if ($con = sqlite3_open('post.db')) {
+if ($con = sqlite3_open('data/post.db')) {
 	# Tabelle ggf. erzeugen
 	$q = @sqlite3_query($con,'SELECT host FROM events WHERE id = 1');
 	if ($q === false) {
