@@ -1,0 +1,9 @@
+<Files post.db>
+	order deny,allow
+	deny from all
+</Files>
+
+<Files *.inc>
+	order deny,allow
+	deny from all
+</Files>
