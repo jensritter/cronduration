@@ -24,19 +24,136 @@ if (!$dbh_l) {
 }
 
 if (!$dbh_p->Execute("delete from events")) {
-	die($dbh_p->ErrorMsg());
-}
-/*
-pg_prepare($dbh_p,"insert-into-temp",'insert into events(host,command,state,log,statedate,id) values (?,?,?,?,?,?);');
-$sth_l = sqlite3_query($dbh_l,"select * from events order by id");
-if (!$sth_l) {
-	die(sqlite3_error($dbh_l));
+	die("Postgresql Error : " . $dbh_p->ErrorMsg());
 }
 
-print "<div class='status'>Inserting . . . </div>\n";
+$dbh_l->BeginTrans();
+$pst_InsertEvents = $dbh_p->prepare("insert into events(host,command,state,log,statedate,id) values (?,?,?,?,?,?);");
+
+$rs = &$dbh_l->Execute("select * from events order by id");
+if (!$rs) {
+	$msg = $dbh_l->ErrorMsg();
+	$dbh_l->RollbackTrans();
+	die($msg);
+}
+
+/* Copy SQLITE -> Postgresql */
+while (!$rs->EOF) {
+	$param = array();
+	array_push($param,$rs->fields["host"]);
+	array_push($param,$rs->fields["command"]);
+	array_push($param,$rs->fields["state"]);
+	array_push($param,$rs->fields["log"]);
+	array_push($param,$rs->fields["statedate"]);
+	array_push($param,$rs->fields["id"]);
+	$ok = $dbh_p->Execute($pst_InsertEvents,$param);
+	if (!$ok) {
+		die($dbh_p->ErrorMsg());
+	}
+	$rs->MoveNext();
+}
+$rs->close();
+//TODO:1  -- flip this one
+//$dbh_l->Execute("delete from events");
+
+$dbh_p->BeginTrans();
+// TODO:2 -- flip this one
+$dbh_p->Execute("delete from parsed");
+
+$pst_insertparsed = $dbh_p->Prepare('insert into parsed(host,command,start,stop,log_start,log_stop,duration)values(?,?,?,?,?,?,cast(extract(epoch from age(?,?)) as int))');
+if (!$pst_insertparsed) {
+	$msg = $dbh_p->ErrorMsg();
+	$dbh_l->RollbackTrans();
+	$dbh_p->RollbackTrans();
+	die($msg);
+}
+$sql = "select * from events where
+	host = ? and command = ?
+	and state = $STATE_STOP
+	and (statedate >= ?)
+	and (statedate <= cast(? as timestamp) + interval '$MAX_DURATION hour' )
+order by statedate limit 1";
+
+$pst_query = $dbh_p->Prepare($sql);
+if (!$pst_query) {
+	$msg = $dbh_p->ErrorMsg();
+	$dbh_l->RollbackTrans();
+	$dbh_p->RollbackTrans();
+	die($msg);
+}
+
+$pst_clear = $dbh_p->Prepare("delete from events where id = ? or id = ?");
+if (!$pst_clear) {
+	$msg = $dbh_p->ErrorMsg();
+	$dbh_l->RollbackTrans();
+	$dbh_p->RollbackTrans();
+	die($msg);
+}
+
+$rs = $dbh_p->Execute("select * from events where state = 0 order by statedate desc");
+if (!$rs) {
+	$msg = $dbh_p->ErrorMsg();
+	$dbh_l->RollbackTrans();
+	$dbh_p->RollbackTrans();
+	die($msg);
+}
+while (!$rs->EOF) {
+	$param = array();
+	array_push($param,$rs->fields["host"]);
+	array_push($param,$rs->fields["command"]);
+	array_push($param,$rs->fields["statedate"]);
+	array_push($param,$rs->fields["statedate"]);
+
+	$find = $dbh_p->Execute($pst_query,$param);
+	if (!$find) {
+		$msg = $dbh_p->ErrorMsg();
+		$dbh_l->RollbackTrans();
+		$dbh_p->RollbackTrans();
+		die($msg);
+	}
+	if ($find->EOF) {
+		$dbh_l->RollbackTrans();
+		$dbh_p->RollbackTrans();
+		die("Nur einen Datensatz f. Event gefunden :" . join(",",$param));
+	}
+	$id1 = $rs->fields["id"];
+	$id2 = $find->fields["id"];
+	$param = array();
+	array_push($param,$rs->fields["host"]);
+	array_push($param,$rs->fields["command"]);
+	array_push($param,$rs->fields["statedate"]);
+	array_push($param,$find->fields["statedate"]);
+	array_push($param,$rs->fields["log"]);
+	array_push($param,$find->fields["log"]);
+	array_push($param,$find->fields["statedate"]);
+	array_push($param,$rs->fields["statedate"]);
+	$ok = $dbh_p->Execute($pst_insertparsed,$param);
+	if (!$ok) {
+		$msg = $dbh_p->ErrorMsg();
+		$dbh_l->RollbackTrans();
+		$dbh_p->RollbackTrans();
+		die($msg);
+	}
+	$param = array($id1,$id2); // 2x ID
+	$ok = $dbh_p->Execute($pst_clear,$param);
+	if (!$ok) {
+		$msg = $dbh_p->ErrorMsg();
+		$dbh_l->RollbackTrans();
+		$dbh_p->RollbackTrans();
+		die($msg);
+	}
+	$find->close();
+	$rs->MoveNext();
+}
+$rs->close();
 
 
-*/
+
+$dbh_l->CommitTrans();
+$dbh_l->close();
+$dbh_p->CommitTrans();
+$dbh_p->close();
+
 ?>
 </body>
 </html>

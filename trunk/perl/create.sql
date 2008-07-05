@@ -10,7 +10,7 @@ CREATE TABLE events (
 
 
 create table parsed (
-	id int,
+	id serial,
 	host varchar(255),
 	command varchar(255),
 	start timestamp,
@@ -26,3 +26,4 @@ create index idx_host on events(host,command,state);
 
 grant all on events to post;
 grant all on parsed to post;
+grant all on parsed_id_seq to post;
