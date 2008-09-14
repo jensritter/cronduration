@@ -17,7 +17,6 @@ import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.CategoryPlot;
 import org.jfree.chart.renderer.category.CategoryItemRenderer;
-import org.jfree.data.gantt.SlidingGanttCategoryDataset;
 import org.jfree.data.gantt.Task;
 import org.jfree.data.gantt.TaskSeries;
 import org.jfree.data.gantt.TaskSeriesCollection;
@@ -29,18 +28,22 @@ public class Main extends NetbeansView{
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		boolean compilerHack = true;
 		try {
+			
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		} catch (ClassNotFoundException e) {
-		} catch (InstantiationException e) {
-		} catch (IllegalAccessException e) {
-		} catch (UnsupportedLookAndFeelException e) {
+		} catch (ClassNotFoundException e) { compilerHack = false;
+		} catch (InstantiationException e) { compilerHack = false;
+		} catch (IllegalAccessException e) { compilerHack = false;
+		} catch (UnsupportedLookAndFeelException e) { compilerHack = false;
 		}
-		java.awt.EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				new Main().setVisible(true);
-			}
-		});
+		if (compilerHack || !compilerHack) {
+			java.awt.EventQueue.invokeLater(new Runnable() {
+				public void run() {
+					new Main().setVisible(true);
+				}
+			});
+		}
 	}
 
 	public Main() {
