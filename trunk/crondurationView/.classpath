@@ -11,6 +11,5 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/log4j-1.2.14.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/eclipsesJava"/>
-	<classpathentry kind="lib" path="/jar/postgres/postgresql-8.3-603.jdbc3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
